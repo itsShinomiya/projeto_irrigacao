@@ -1,7 +1,14 @@
-<h1 align="center">🌱 Sistema de Irrigação Automático — ESP32</h1>
+<h1 align="center">🌱 Smart Garden IoT — ESP32 com MQTT</h1>
 
 <p align="center">
-  <em>Automatize sua irrigação de forma inteligente usando sensores e um ESP32!</em>
+  <em>Sistema de irrigação inteligente e conectado à nuvem via MQTT (HiveMQ).<br>
+  Monitore e controle sua planta de qualquer lugar do mundo!</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/ESP32-WiFi-blue" alt="ESP32 WiFi">
+  <img src="https://img.shields.io/badge/Protocolo-MQTT-orange" alt="MQTT">
+  <img src="https://img.shields.io/badge/Plataforma-HiveMQ-yellow" alt="HiveMQ">
 </p>
 
 ---
@@ -10,87 +17,82 @@
 
 <table>
   <tr><th>Componente</th><th>Descrição</th></tr>
-  <tr><td><b>ESP32</b></td><td>Microcontrolador principal</td></tr>
-  <tr><td><b>Sensor DHT11</b></td><td>Mede temperatura e umidade do ar</td></tr>
-  <tr><td><b>Sensor de Umidade do Solo</b></td><td>Mede o nível de umidade no solo</td></tr>
-  <tr><td><b>Sensor de Nível d’Água</b></td><td>Verifica se o reservatório possui água</td></tr>
-  <tr><td><b>Módulo Relé 5V</b></td><td>Controla a bomba de irrigação</td></tr>
-  <tr><td><b>Bomba de Água (opcional)</b></td><td>Realiza a irrigação</td></tr>
+  <tr><td><b>ESP32</b></td><td>Microcontrolador com Wi-Fi e suporte a SSL/TLS</td></tr>
+  <tr><td><b>Sensor DHT11</b></td><td>Monitoramento de temperatura e umidade do ambiente</td></tr>
+  <tr><td><b>Sensor de Umidade do Solo</b></td><td>Capacitivo ou Resistivo (entrada analógica)</td></tr>
+  <tr><td><b>Sensor de Nível d’Água</b></td><td>Monitora se o reservatório está vazio</td></tr>
+  <tr><td><b>Módulo Relé 5V</b></td><td>Acionamento da bomba d'água</td></tr>
+  <tr><td><b>Bomba de Água</b></td><td>Atuador para irrigação</td></tr>
 </table>
 
 ---
 
-<h2>⚙️ Ligações dos Pinos</h2>
+<h2>⚙️ Ligações dos Pinos (Hardware)</h2>
+
+> **Atenção:** A pinagem foi atualizada para este código.
 
 <table>
-  <tr><th>Pino ESP32</th><th>Componente</th><th>Função</th></tr>
-  <tr><td>4</td><td>Sensor de Umidade do Solo</td><td>Entrada analógica</td></tr>
-  <tr><td>22</td><td>DHT11</td><td>Leitura de temperatura e umidade</td></tr>
-  <tr><td>2</td><td>Sensor de Nível d’Água</td><td>Entrada analógica</td></tr>
-  <tr><td>23</td><td>Relé</td><td>Saída digital (acionamento da bomba)</td></tr>
+  <tr><th>Pino ESP32</th><th>Componente</th><th>Tipo</th></tr>
+  <tr><td><b>32</b></td><td>Sensor de Umidade do Solo</td><td>Entrada Analógica (ADC)</td></tr>
+  <tr><td><b>33</b></td><td>Sensor de Nível d’Água</td><td>Entrada Analógica (ADC)</td></tr>
+  <tr><td><b>22</b></td><td>DHT11</td><td>Dados Digital</td></tr>
+  <tr><td><b>23</b></td><td>Relé (Bomba)</td><td>Saída Digital</td></tr>
 </table>
 
 ---
 
-<h2>🧠 Funcionamento</h2>
+<h2>📡 Tópicos MQTT (Integração)</h2>
 
-<ol>
-  <li>O ESP32 realiza leituras periódicas:
-    <ul>
-      <li>A cada <b>2 segundos</b>, lê temperatura e umidade do ar (DHT11);</li>
-      <li>A cada <b>20 segundos</b>, lê a umidade do solo.</li>
-    </ul>
-  </li>
-  <li>O nível de água é verificado constantemente:
-    <ul><li>Se o nível estiver <b>crítico</b>, o sistema alerta no monitor serial.</li></ul>
-  </li>
-  <li>Se a umidade do solo estiver <b>abaixo de 40%</b> e o nível de água <b>OK</b>, o relé é acionado.</li>
-  <li>Todas as informações são exibidas no <b>Monitor Serial</b> a 115200 baud.</li>
-</ol>
+O sistema se comunica através de um Broker MQTT (neste código: HiveMQ). Utilize estes tópicos para configurar seu Dashboard (Node-RED, Home Assistant, IoT MQTT Panel, etc).
 
----
+**ID da Planta:** `8` (Configurável no código em `#define PLANTA_ID`)
 
-<h2>🖥️ Exemplo de Saída</h2>
+### 📤 Publicação (O ESP32 envia dados aqui)
 
-<pre>
-Sistema de irrigação iniciado!
-Temperatura: 27.5 °C | Umidade do ar: 62 %
-Nível de água: OK 💧
-Umidade do solo: 34 %
-Solo seco! Bomba LIGADA 🚿
-</pre>
+| Tópico | Descrição | Exemplo de Valor |
+| :--- | :--- | :--- |
+| `planta/8/umidade` | Umidade atual do solo (%) | `45.5` |
+| `planta/8/temperatura` | Temperatura ambiente (°C) | `24.0` |
+| `planta/8/umidade_ar` | Umidade do ar (%) | `60.0` |
+| `planta/8/reservatorio` | Status do tanque de água | `OK` ou `BAIXO` |
+| `planta/8/bomba/status` | Confirmação se a bomba está ligada | `1` (Ligada) / `0` (Desl.) |
+
+### 📥 Subscrição (O ESP32 recebe comandos aqui)
+
+| Tópico | Payload | Função |
+| :--- | :--- | :--- |
+| `planta/8/bomba/comando` | `1` ou `0` | Liga/Desliga a bomba manualmente (Funciona apenas se o Modo Auto estiver OFF) |
+| `planta/8/auto/modo` | `1` ou `0` | `1` = Ativa Modo Automático <br> `0` = Ativa Modo Manual |
+| `planta/8/auto/meta` | `0` a `100` | Define a meta de umidade para o modo automático (Ex: `60`) |
 
 ---
 
-<h2>📈 Ajustes Importantes</h2>
+<h2>🧠 Lógica de Funcionamento</h2>
 
-<p>Se o sensor de umidade do solo tiver comportamento diferente, ajuste os valores de calibração:</p>
+### 1. Conexão Segura
+O sistema utiliza `WiFiClientSecure` para conectar ao broker HiveMQ na porta **8883** (SSL), garantindo segurança na transmissão dos dados.
 
-<pre><code>float umidadeFloat = (4095.0 - valorSolo) * 100.0 / (4095.0 - 1500.0);
-</code></pre>
+### 2. Ciclo de Leitura
+A cada **2 segundos**, o sistema:
+* Lê os sensores (Solo, Nível, DHT);
+* Verifica a lógica de automação;
+* Publica os dados atualizados nos tópicos MQTT.
 
-<ul>
-  <li><b>4095</b> → leitura no solo seco</li>
-  <li><b>1500</b> → leitura no solo úmido</li>
-</ul>
+### 3. Modos de Operação
+* **Modo Manual (`modoAutomatico = false`):**
+  * Você controla a bomba enviando `1` ou `0` para o tópico de comando.
+* **Modo Automático (`modoAutomatico = true`):**
+  * O sistema liga a bomba se: `Umidade Solo < Meta` **E** `Reservatório OK`.
+  * O sistema desliga a bomba se: `Umidade Solo > (Meta + 20%)` **OU** `Reservatório Baixo`.
 
-<p>Esses valores variam conforme o tipo de sensor e o solo.</p>
-
----
-
-<h2>🚀 Como Usar</h2>
-
-<ol>
-  <li>Carregue o código no ESP32 via <b>Arduino IDE</b>.</li>
-  <li>Abra o <b>Monitor Serial</b> com baud rate de <b>115200</b>.</li>
-  <li>Observe as leituras e o acionamento automático da bomba.</li>
-</ol>
+### 4. Sistema de Segurança (Fail-safe)
+Se o sensor de nível detectar que o reservatório está **BAIXO** (`< 700` na leitura analógica), a bomba é desligada imediatamente (ou impedida de ligar), protegendo o hardware de queimar por trabalhar a seco.
 
 ---
 
-<h2>🧾 Licença</h2>
+<h2>📈 Calibração do Sensor de Solo</h2>
 
-<p>Este projeto é de uso livre para fins educacionais e pode ser adaptado conforme necessidade.</p>
+O código utiliza uma conversão linear para porcentagem. Se necessário, ajuste as constantes na linha 134:
 
-<p align="center">Feito com 💧 e ☀️ por <b>Eduardo Serotini</b></p>
-
+```cpp
+float umidadeSolo = (4095.0 - valorSolo) * 100.0 / (4095.0 - 1500.0);
