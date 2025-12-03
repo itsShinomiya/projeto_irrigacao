@@ -11,12 +11,12 @@
 #define TIPO_DHT DHT11
 
 // === WIFI & MQTT ===
-const char* ssid = "Desktop_F2824662";
-const char* password = "Dud112011";
-const char* mqtt_server = "2594f46051674273aabeb437a13ee315.s1.eu.hivemq.cloud";
-const int mqtt_port = 8883;
-const char* mqtt_user = "itsshinomiya";
-const char* mqtt_pass = "123@Mqtt";
+const char* ssid = "YOURNETWORK";
+const char* password = "YOURPASSWORD";
+const char* mqtt_server = "YOURSERVER";
+const int mqtt_port = "YOURPORT";
+const char* mqtt_user = "YOURUSER";
+const char* mqtt_pass = "YOURPASSWORD";
 
 #define PLANTA_ID "8"
 
@@ -170,3 +170,4 @@ void loop() {
     }
   }
 }
+
